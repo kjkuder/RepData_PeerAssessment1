@@ -3,8 +3,10 @@
 # Project #1
 # Karl Kuder
 
-# Unzip, read and format the input data file
+library(lubridate)
+library(stringr)
 
+
+# Unzip, read and format the input data file
 unzip("activity.zip")
 Activity <- read.csv("activity.csv")
-Activity$newDate <- as.Date(Activity$date)

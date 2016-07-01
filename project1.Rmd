@@ -6,13 +6,22 @@ output: html_document
 ---
 
 # File processing and summaries
-Unzip and read the input data file. Build daily and interval summmaries.
+Download, unzip and read the input data file.
+Convert date from a factor to date format.
+Sort the data by date then interval.
+Build daily and interval summmaries.
 
 ```{r}
+download.file(url = "https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2Factivity.zip",
+              destfile = "activity.zip")
 unzip("activity.zip")
 Activity <- read.csv("activity.csv")
-DailySum <- with(Activity, tapply(steps, date, sum))
-IntMean <- aggregate(steps ~ interval, data = Activity, FUN = mean)
+Activity$date <- as.Date(Activity$date)
+Acitivity <- Activity[order(Activity$date, Activity$interval),]
+DailySum <- aggregate(steps ~ date, data = Activity, na.rm = TRUE, FUN = sum)
+IntMean <- aggregate(steps ~ interval, data = Activity,
+                     na.rm = TRUE, FUN = mean)
+
 ```
 
 
@@ -21,10 +30,12 @@ IntMean <- aggregate(steps ~ interval, data = Activity, FUN = mean)
 
 # Total number of steps taken each day
 ```{r}
-hist(DailySum, xlab = "Steps", ylab = "Days", 
-     main = "Number of days at each level of steps", breaks = 10)
-meanSteps <- mean(DailySum, na.rm=TRUE)
-medianSteps <- median(DailySum, na.rm=TRUE)
+hist(DailySum$steps, xlab = "Steps", ylab = "Days", 
+     main = "Number of days at each level of steps")
+meanSteps <- mean(DailySum$steps)
+meanSteps
+medianSteps <- median(DailySum$steps)
+medianSteps
 ```
 
 The mean number of steps taken each day is `r format(meanSteps, nsmall=2)`
@@ -40,3 +51,32 @@ maxInterval <- with(IntMean, interval[(steps == max(steps))])
 ```
 
 The interval with the maximum average number of steps is `r maxInterval`
+
+
+
+# Imputing missing values
+
+Find number of intervals which are missing step data.
+
+```{r}
+sum(is.na(Activity$steps))
+```
+
+
+Loop through the data set and impute values when steps are missing
+by using the average steps for that interval overall.
+```{r}
+for (i in 1:nrow(Activity)) {
+    if (is.na(Activity$steps[i])) {
+        Activity$stepSource[i] <- "imputed"
+        Activity$newSteps[i] <- 
+            IntMean$steps[IntMean$interval == Activity$interval[i]]
+    } else {
+        Activity$stepSource[i] <- "actual"
+        Activity$newSteps[i] <- Activity$steps[i]
+    }
+}
+
+Activity$stepSource <- as.factor(Activity$stepSource)
+```
+
