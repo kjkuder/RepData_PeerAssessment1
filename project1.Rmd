@@ -113,3 +113,13 @@ ActivityNew$dayType <-
            'weekend', 'weekday')
 ```
 
+# Differences in activity levels between weekends and weekdays
+```{r}
+IntMeanNew <- aggregate(newSteps ~ interval + dayType, data = ActivityNew,
+                        FUN = mean)
+library(lattice)
+with(IntMeanNew, xyplot(newSteps ~ interval | dayType, 
+  	                     ylab="Mean steps", xlab="Interval",
+                         type = 'l', aspect = 1/2))
+```
+
