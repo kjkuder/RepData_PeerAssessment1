@@ -17,7 +17,7 @@ download.file(url = "https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2Facti
 unzip("activity.zip")
 Activity <- read.csv("activity.csv")
 Activity$date <- as.Date(Activity$date)
-Acitivity <- Activity[order(Activity$date, Activity$interval),]
+Activity <- Activity[order(Activity$date, Activity$interval),]
 DailySum <- aggregate(steps ~ date, data = Activity, na.rm = TRUE, FUN = sum)
 IntMean <- aggregate(steps ~ interval, data = Activity,
                      na.rm = TRUE, FUN = mean)
@@ -28,7 +28,7 @@ IntMean <- aggregate(steps ~ interval, data = Activity,
 
 
 
-# Total number of steps taken each day
+# Total number of steps taken each day (original data)
 ```{r}
 hist(DailySum$steps, xlab = "Steps", ylab = "Days", 
      main = "Number of days at each level of steps")
@@ -62,21 +62,54 @@ Find number of intervals which are missing step data.
 sum(is.na(Activity$steps))
 ```
 
-
-Loop through the data set and impute values when steps are missing
-by using the average steps for that interval overall.
+Create a new data set, then loop throuhg it and impute values when steps
+are missing by using the average steps for that interval overall.
 ```{r}
-for (i in 1:nrow(Activity)) {
-    if (is.na(Activity$steps[i])) {
-        Activity$stepSource[i] <- "imputed"
-        Activity$newSteps[i] <- 
-            IntMean$steps[IntMean$interval == Activity$interval[i]]
+ActivityNew <- Activity
+for (i in 1:nrow(ActivityNew)) {
+    if (is.na(ActivityNew$steps[i])) {
+        ActivityNew$stepSource[i] <- "imputed"
+        ActivityNew$newSteps[i] <- 
+            IntMean$steps[IntMean$interval == ActivityNew$interval[i]]
     } else {
-        Activity$stepSource[i] <- "actual"
-        Activity$newSteps[i] <- Activity$steps[i]
+        ActivityNew$stepSource[i] <- "actual"
+        ActivityNew$newSteps[i] <- ActivityNew$steps[i]
     }
 }
 
-Activity$stepSource <- as.factor(Activity$stepSource)
+ActivityNew$stepSource <- as.factor(ActivityNew$stepSource)
+```
+
+
+
+# Total number of steps taken each day (with imputed data)
+```{r}
+DailySumNew <- aggregate(newSteps ~ date, data = ActivityNew, na.rm = TRUE, FUN = sum)
+
+hist(DailySumNew$newSteps, xlab = "Steps", ylab = "Days", 
+     main = "Number of days at each level of steps")
+meanStepsNew <- mean(DailySumNew$newSteps)
+meanStepsNew
+medianStepsNew <- median(DailySumNew$newSteps)
+medianStepsNew
+```
+
+Diference in mean and median between original data and new data with 
+imputed values for missing data.
+```{r}
+meanDif <- meanStepsNew - meanSteps
+meanDif
+medianDif <- medianStepsNew - medianSteps
+medianDif
+```
+
+The mean is the same, which makes sense since imputed data is based on interval
+means. The median daily steps is slightly higher.
+
+Create a new factor variable to classify as weekends or weekdays
+```{r}
+ActivityNew$dayType <- 
+    ifelse(((weekdays(ActivityNew$date)) %in% c('Sunday', 'Saturday')),
+           'weekend', 'weekday')
 ```
 
